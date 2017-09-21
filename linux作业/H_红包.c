@@ -20,7 +20,7 @@ int N = 10;//红包个数
 pthread_t thread[10];
 pthread_mutex_t mut;
 int count = 0; //记录剩余钱数
-int who  = 0;  //人编号
+int who  = 1;  //人编号
 
 
 int my_rand(int s, void * arg)
@@ -28,7 +28,12 @@ int my_rand(int s, void * arg)
     int *p = (int *)arg;
     time_t ts;
     srand((unsigned int)time(&ts) + *p);//按照时间设定随机数种子
-    int a = rand() % s;           //限定随机数的范围
+    int a = 0;
+    while(a == 0)
+    {
+        a = rand() % s;           //限定随机数的范围
+    }
+
     return a;
 }
 
@@ -53,12 +58,12 @@ void *thread_0(void * agr)
     else
     {
         pthread_mutex_lock(&mut);
-        count += num = my_rand(3, p);
+        count += num = my_rand(redpack/10 + 3, p);
         N--;
         printf("%d抢到的钱数%d\n",who++,num);
         pthread_mutex_unlock(&mut);
-        pthread_exit(NULL);
     }
+    pthread_exit(NULL);
 }
 void thread_wait(void)
 {
