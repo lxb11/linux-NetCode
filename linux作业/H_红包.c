@@ -44,25 +44,34 @@ void *thread_0(void * agr)
     
     //printf("thread_0: waiting\n");
     int num = 0;
-    if(N == 1)
+    if(N == 0 && count == redpack)
     {
 
         num = 20 - count;
         for(int i = 0; i < 10; i++)
         {
-            if(agr != thread[i])
+            if(*p != thread[i])
                 pthread_cancel(thread[i]);
         }
         printf("%d抢到的钱数%d\n",who++,num);
+        printf("红包剩余钱数%d\n",redpack - count);
     } 
-    else
+    pthread_mutex_lock(&mut);
+    if(N == 1)
     {
-        pthread_mutex_lock(&mut);
-        count += num = my_rand(redpack/10 + 3, p);
+        num = redpack - count;
+        count += num;
+        printf("%d抢到的钱数我强到了最后一个红包%d\n",who++,num);
+        printf("红包剩余钱数%d\n",redpack - count);
+    }
+    else if(N > 1)
+    {
+        count += num = my_rand(redpack/10 + 2, p);
         N--;
         printf("%d抢到的钱数%d\n",who++,num);
-        pthread_mutex_unlock(&mut);
+        printf("红包剩余钱数%d\n",redpack - count);
     }
+    pthread_mutex_unlock(&mut);
     pthread_exit(NULL);
 }
 void thread_wait(void)
