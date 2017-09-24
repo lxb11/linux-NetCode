@@ -53,8 +53,6 @@ void *thread_0(void * agr)
             if(*p != thread[i])
                 pthread_cancel(thread[i]);
         }
-        printf("%d抢到的钱数%d\n",who++,num);
-        printf("红包剩余钱数%d\n",redpack - count);
     } 
     pthread_mutex_lock(&mut);
     if(N == 1)
