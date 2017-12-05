@@ -22,6 +22,7 @@
 #define _MAX_NUM_ 64
 #define _BACK_LOG_ 5
 
+int set_nonblock(int fd);
 int start_up()
 {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -30,7 +31,7 @@ int start_up()
         perror("socket");
         exit(1);
     }
-    setnonblocking(sock);//把socket设置为非阻塞方式
+    set_nonblock(sock);//把socket设置为非阻塞方式
     
     struct sockaddr_in local;
     local.sin_family = AF_INET;
@@ -136,7 +137,7 @@ int main()
                         {
                             printf("get a connect...,count:%d\n",++count);
 
-                            set_nonblock(new_sock);//设置为非阻塞方式
+                             set_nonblock(new_sock);//设置为非阻塞方式
                             _ev.events = EPOLLIN ;// EPOLLOUT;//可以读写
                             _ev.data.fd = new_sock;
                             //epoll的注册函数，注册_ev
@@ -147,10 +148,9 @@ int main()
                                 continue;
                             }
                             printf("Insert new_sock success, new_sock is : %d\n", new_sock);
-                            //continue;
                         }
                     }
-                    if(_ev_out[i].events & EPOLLIN)//如果是已经连接的用户，有可读数据
+                    else if(fd > 0 && _ev_out[i].events & EPOLLIN)//如果是已经连接的用户，有可读数据
                     {
                         memset(buf, '\0', sizeof(buf));
                         ssize_t size = read(fd, buf, sizeof(buf));
@@ -161,28 +161,32 @@ int main()
                             epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
                             close(fd);
                         }
-                        printf("%s\n", buf);
-
-
-                        //echo to client
-                        ssize_t size_write = write(fd, buf, strlen(buf));
-                        if(size_write < 0)
+                        else if(size < 0)
                         {
-                            perror("write");
-                            break;
+                            perror("read");
+                            continue;
                         }
-                        else if(size_write == strlen(buf))//全部发送，无剩余
+                        else
                         {
-                            printf("write size %ld  fd is %d\n", size_write, fd);
-                            _ev.events &= ~EPOLLOUT;//不再关注写
-                            epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &_ev);
-                        }
-                        else if(size_write < strlen(buf))//关注写事件，下次触发是继续发送剩余的
-                        {
-                            memset(user_buf, 0, sizeof(user_buf));
-                            memcpy(user_buf, buf + size_write, strlen(buf) - size);
-                            _ev.events = EPOLLOUT;//关注写事件
-                            epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &_ev);
+                            printf("%s\n", buf);
+                            //echo to client
+                            ssize_t size_write = write(fd, buf, strlen(buf));
+                            if(size_write < 0)
+                            {
+                                perror("write");
+                                break;
+                            }
+                            else if(size_write == strlen(buf))//全部发送，无剩余
+                            {
+                                printf("write size %ld  fd is %d\n", size_write, fd);
+                            }
+                            else if(size_write < strlen(buf))//关注写事件，下次触发是继续发送剩余的
+                            {
+                                memset(user_buf, 0, sizeof(user_buf));
+                                memcpy(user_buf, buf + size_write, strlen(buf) - size);
+                                _ev.events = EPOLLOUT;//关注写事件
+                                epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &_ev);
+                            }
                         }
                     }
                     if(_ev_out[i].events & EPOLLOUT)//处理上次没发送完的数据
@@ -207,7 +211,7 @@ int main()
                             epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &_ev);
                         }
                     }     
-                }
+                }//default for
             }//default
             break;
         }//switch
@@ -217,3 +221,4 @@ int main()
     close(epoll_fd);
     return 0;
 }
+
