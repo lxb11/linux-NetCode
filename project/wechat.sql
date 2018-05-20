@@ -1,3 +1,6 @@
+CREATE USER 'wechat'@'localhost'  IDENTIFIED BY 'wechat123';
+grant all privileges on wechat.* to 'wechat'@'localhost' identified by 'wechat123';
+
 CREATE database wechat;\
 use wechat;\
 CREATE TABLE UserTable(\
